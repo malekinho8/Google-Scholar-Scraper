@@ -11,9 +11,9 @@ Original file is located at
 ## Key Inputs
 """
 
-search_query = "nanoscale 3D printing" #@param {type:"string"}
+search_query = "3D Printing" #@param {type:"string"}
 # save_folder = "" #@param {type:"string"}
-start_date = 2000 #@param {type:"slider", min:1920, max:2022, step:1}
+start_date = 2010 #@param {type:"slider", min:1920, max:2022, step:1}
 end_date = 2022 #@param {type:"slider", min:1920, max:2022, step:1}
 
 assert(end_date >= start_date)
@@ -23,7 +23,7 @@ assert(end_date >= start_date)
 If searching for multiple keywords, ensure that they are separated by a single comma.
 """
 
-AND_keywords = "" #@param {type:"string"}
+AND_keywords = "optimize process parameters" #@param {type:"string"}
 OR_keywords = "" #@param {type:"string"}
 author = "" #@param {type:"string"}
 publisher = "" #@param {type:"string"}
@@ -51,23 +51,27 @@ import matplotlib.pyplot as plt
 def make_gs_url(current_year:int,search_query:str,**kwargs) -> str:
   # at some point add  functionality to include other advanced search options, but for now just focus on year and main search query
   search_query = search_query.replace(' ','+')
+  AND_keywords.replace(' ','+')
   url_base = 'https://scholar.google.com/scholar?'
-  url = url_base + f'as_q=' + f'&as_epq=%22{search_query}%22' f'&as_ylo={current_year}&as_yhi={current_year}' + '&hl=en&as_sdt=0%2C222'
+  url = url_base + f'as_q=' + f'&as_epq="{search_query}"' + f'+"{AND_keywords}"' f'&as_ylo={current_year}&as_yhi={current_year}' + '&hl=en&as_sdt=0%2C222'
   # url = url_base + f'as_q=' + f'&as_epq=%22' f'&as_ylo={current_year}&as_yhi={current_year}' + f'as_' + f'&q=%22' + '&hl=en&as_sdt=0%2C222'
   # url_base = 'https://scholar.google.com/scholar?hl=en&as_sdt=0%2C22&as_ylo=2000&as_yhi=2000&q=%22atomic+force+microscopy%22+OR+%22AFM%22&btnG='
   # url = 'https://scholar.google.com/scholar?as_q=&as_epq=&as_oq=%22atomic+force+microscopy%22+AFM&as_eq=machine+learning&as_occt=any&as_sauthors=&as_publication=&as_ylo=2000&as_yhi=2000&hl=en&as_sdt=0%2C22#d=gs_asd&t=1667621660536'
   # test = 'https://scholar.google.com/scholar?as_q=&as_epq=%22experiment%22+%22testing+this%22&as_oq=%22atomic+force+microscopy%22+%22AFM+feedback+control%22&as_eq=machine+learning&as_occt=any&as_sauthors=PJ+Hayes&as_publication=Test&as_ylo=2000&as_yhi=2000&hl=en&as_sdt=0%2C22#d=gs_asd&t=1667622954720'
   return url
 
-def get_webpage_results(search_query:str,start_date:int,end_date:int) -> np.ndarray:
+def get_webpage_results(search_query:str,start_date:int,end_date:int,**kwargs) -> np.ndarray:
   out = []
   for year in np.arange(start_date,end_date+1):
     print(year)
-    url = make_gs_url(year,search_query)
+    url = make_gs_url(year,search_query,**kwargs)
+    print(url)
     gs_response = requests.get(url)
     gs_soup = BeautifulSoup(gs_response.text,'html.parser')
     if 'About' in str(gs_soup):
       num_pubs = int(str(gs_soup).split('About ')[1].split(' results')[0].replace(',',''))
+    elif '1 result' in str(gs_soup):
+      num_pubs = 1
     elif 'did not match any articles published' in str(gs_soup):
       num_pubs = 0
     out.append(num_pubs)
@@ -108,7 +112,8 @@ output.clear()
 """# Main Code"""
 
 # get_webpage_results() --> Obtain the publication data for the given search query settings
-pub_data = get_webpage_results(search_query,start_date,end_date)
+pub_data = get_webpage_results(search_query,start_date,end_date,**kwargs)
 
 # plot_pub_data() --> plots the pub_data into a nice figure
 plot_pub_data(1,start_date,end_date,search_query,pub_data)
+
