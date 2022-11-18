@@ -11,7 +11,7 @@ Original file is located at
 ## Key Inputs
 """
 
-search_query = "3D Printing" #@param {type:"string"}
+search_query = "magnetic levitation" #@param {type:"string"}
 # save_folder = "" #@param {type:"string"}
 start_date = 2010 #@param {type:"slider", min:1920, max:2022, step:1}
 end_date = 2022 #@param {type:"slider", min:1920, max:2022, step:1}
@@ -23,7 +23,7 @@ assert(end_date >= start_date)
 If searching for multiple keywords, ensure that they are separated by a single comma.
 """
 
-AND_keywords = "optimize process parameters" #@param {type:"string"}
+AND_keywords = "" #@param {type:"string"}
 OR_keywords = "" #@param {type:"string"}
 author = "" #@param {type:"string"}
 publisher = "" #@param {type:"string"}
@@ -45,6 +45,8 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 import matplotlib.pyplot as plt
+from google.colab import files, output
+from time import sleep
 
 # %matplotlib inline
 
@@ -69,20 +71,26 @@ def get_webpage_results(search_query:str,start_date:int,end_date:int,**kwargs) -
     gs_response = requests.get(url)
     gs_soup = BeautifulSoup(gs_response.text,'html.parser')
     if 'About' in str(gs_soup):
-      num_pubs = int(str(gs_soup).split('About ')[1].split(' results')[0].replace(',',''))
+      result_str = str(gs_soup).split('About ')[1].split(' results')[0]
+      if '.' in result_str:
+        num_pubs = int(result_str.replace('.',''))
+      elif ',' in result_str:
+        num_pubs = int(result_str.replace(',',''))
     elif '1 result' in str(gs_soup):
       num_pubs = 1
     elif 'did not match any articles published' in str(gs_soup):
       num_pubs = 0
     out.append(num_pubs)
+    sleep(0.5)
   return np.array(out)
 
 def plot_pub_data(fig_num:int,start_date:int,end_date:int,search_query:str,pub_data:np.ndarray,figsize=(10,8)):
-  plt.figure(fig_num,figsize=figsize)
+  fig = plt.figure(fig_num,figsize=figsize)
   plt.bar(np.arange(start_date,end_date+1),pub_data)
   plt.title(f'No. of Publications on ``{search_query}" between {start_date} and {end_date}')
   plt.xlabel('Year')
   plt.show()
+  return fig
 
 """# LaTEX Figure Formatting (Optional)"""
 
@@ -115,5 +123,7 @@ output.clear()
 pub_data = get_webpage_results(search_query,start_date,end_date,**kwargs)
 
 # plot_pub_data() --> plots the pub_data into a nice figure
-plot_pub_data(1,start_date,end_date,search_query,pub_data)
+fig = plot_pub_data(1,start_date,end_date,search_query,pub_data)
+fig.savefig('publication-data.png')
 
+files.download('publication-data.png')
